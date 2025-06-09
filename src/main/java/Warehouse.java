@@ -41,6 +41,7 @@ public class Warehouse {
         this.products = new ArrayList<>();
         this.stockMoves = new ArrayList<>();
     }
+    
 
     /**
      * Агуулахад бүтээгдэхүүн нэмнэ.
@@ -56,6 +57,11 @@ public class Warehouse {
         }
         if (product.getQuantity() <= 0) {
             throw new IllegalArgumentException("Нэмэх бүтээгдэхүүний тоо 0-ээс их байх ёстой.");
+        }
+
+        int totalQuantity = products.stream().mapToInt(Product::getQuantity).sum();
+        if (totalQuantity + product.getQuantity() > capacity) {
+            throw new IllegalStateException("Агуулахын багтаамжаас хэтэрсэн бүтээгдэхүүн нэмэх гэж байна.");
         }
 
         for (Product p : products) {
@@ -155,22 +161,24 @@ public class Warehouse {
      * @throws IllegalArgumentException хэрэв шилжүүлэх параметрүүд буруу бол
      */
     public void transferProduct(Product product, int quantity, Warehouse toWarehouse) {
-        if (product == null) {
-            throw new IllegalArgumentException("Шилжүүлэх бүтээгдэхүүн хоосон байж болохгүй.");
-        }
-        if (toWarehouse == null) {
-            throw new IllegalArgumentException("Хүлээн авагч агуулах тодорхой байх ёстой.");
-        }
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("Шилжүүлэх тоо 0-ээс их байх ёстой.");
-        }
-
-        removeProduct(product, quantity);
-        Product transferProduct = new Product(product.getId(), product.getName(), product.getCategory(),
-                product.getPrice(), quantity, product.getBarcode());
-        toWarehouse.addProduct(transferProduct);
-        StockMove move = new StockMove(product, quantity, "Шилжүүлсэн", this.location, toWarehouse.getLocation());
-        this.stockMoves.add(move);
-        toWarehouse.stockMoves.add(move);
+    if (product == null) {
+        throw new IllegalArgumentException("Шилжүүлэх бүтээгдэхүүн хоосон байж болохгүй.");
     }
+    if (toWarehouse == null) {
+        throw new IllegalArgumentException("Хүлээн авагч агуулах тодорхой байх ёстой.");
+    }
+    if (quantity <= 0) {
+        throw new IllegalArgumentException("Шилжүүлэх тоо 0-ээс их байх ёстой.");
+    }
+
+    // Remove from current warehouse
+    removeProduct(product, quantity);
+
+    // Create product with only the quantity being transferred
+    Product transferProduct = new Product(product.getId(), product.getName(), product.getCategory(),
+            product.getPrice(), quantity, product.getBarcode());
+
+    // Add to receiving warehouse
+    toWarehouse.addProduct(transferProduct);
+}
 }
